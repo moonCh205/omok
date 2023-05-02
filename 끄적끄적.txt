@@ -1,0 +1,10 @@
+- 설치한 것
+타입스크립트 설치
+리덕스 설치 typesafe-actions redux react-redux @types/react-redux redux-devtools-extension redux-saga
+eslint 설치
+머티리얼 ui 설치 @material-ui/core @material-ui/icons
+
+
+목표 
+2주 오목 완성
+5월 2일부터 시작했습니다.
