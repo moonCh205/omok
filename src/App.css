@@ -99,3 +99,19 @@
   font-size: 1rem;
   box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
 }
+.case{
+  text-align: center;
+}
+.b{
+  background-color: cadetblue;
+  opacity: .5;
+}
+.a{
+  background-color: rgb(107, 95, 160);
+  opacity: .5;
+}
+.case::after{
+  clear: both;
+  display: block;
+  content:"";
+}
