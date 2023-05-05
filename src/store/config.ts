@@ -1,8 +1,7 @@
-
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { createLogger } from 'redux-logger';
-import {gameSlice,colorSlice} from './slices/omokSlice';
+import { gameSlice, colorSlice } from './slices/omokSlice.js';
 // import todoSlice from './slices/todoSlice';
 // import userSlice from './slices/userSlice';
 
@@ -11,7 +10,7 @@ const logger = createLogger();
 const rootReducer = combineReducers({
   counter: colorSlice.reducer,
   game: gameSlice.reducer,
-//   user: userSlice.reducer
+  //   user: userSlice.reducer
 });
 
 const initialState = {};
@@ -21,7 +20,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
   devTools: process.env.NODE_ENV !== 'production',
   preloadedState: initialState,
-  enhancers: (defaultEnhancers) => [...defaultEnhancers]
+  enhancers: (defaultEnhancers) => [...defaultEnhancers],
 });
 
 export type RootState = ReturnType<typeof store.getState>;
@@ -31,7 +30,6 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 
 export default store;
-
 
 /*
 *reducer
