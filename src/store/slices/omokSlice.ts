@@ -76,11 +76,7 @@ export const gameSlice = createSlice({
       let i = 0;
       let stop = false;
       while (!stop && i < fun.length) {
-        count = checkrule(
-          { y: action.payload.y, x: action.payload.x },
-          state[type],
-          fun[i]
-        );
+        count = checkrule({ y: action.payload.y, x: action.payload.x }, state[type], fun[i]);
         if (count == 5) stop = true;
         i++;
       }
@@ -120,8 +116,7 @@ const checkrule = (
         firstY = top;
         secondY = bottom;
         firstoverflow = 0 <= top && typeof state[top] != 'undefined'; //위로 연결 됐는지 확인하기
-        secondoverflow =
-          mapSize > bottom && typeof state[bottom] != 'undefined'; // // 아래로 연결 됐는지 확인하기
+        secondoverflow = mapSize > bottom && typeof state[bottom] != 'undefined'; // // 아래로 연결 됐는지 확인하기
         break;
       case 2:
         firstX = rigth;
@@ -136,22 +131,16 @@ const checkrule = (
         secondX = left;
         firstY = top;
         secondY = bottom;
-        firstoverflow =
-          mapSize > rigth && 0 <= top && typeof state[top] != 'undefined'; //우측 위로 연결 됐는지 확인하기
-        secondoverflow =
-          0 <= left && mapSize > bottom && typeof state[bottom] != 'undefined'; // 좌측 아래로 연결 됐는지 확인하기
+        firstoverflow = mapSize > rigth && 0 <= top && typeof state[top] != 'undefined'; //우측 위로 연결 됐는지 확인하기
+        secondoverflow = 0 <= left && mapSize > bottom && typeof state[bottom] != 'undefined'; // 좌측 아래로 연결 됐는지 확인하기
         break;
       case 4:
         firstX = left;
         secondX = rigth;
         firstY = top;
         secondY = bottom;
-        firstoverflow =
-          0 <= left && 0 <= top && typeof state[top] != 'undefined'; // 좌측 위로 연결 됐는지 확인하기
-        secondoverflow =
-          mapSize > rigth &&
-          mapSize > bottom &&
-          typeof state[bottom] != 'undefined'; //우측 아래로 연결 됐는지 확인하기
+        firstoverflow = 0 <= left && 0 <= top && typeof state[top] != 'undefined'; // 좌측 위로 연결 됐는지 확인하기
+        secondoverflow = mapSize > rigth && mapSize > bottom && typeof state[bottom] != 'undefined'; //우측 아래로 연결 됐는지 확인하기
         break;
       default:
         firstX = x;

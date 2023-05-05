@@ -1,7 +1,7 @@
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { createLogger } from 'redux-logger';
-import { gameSlice, colorSlice } from './slices/omokSlice.js';
+import { gameSlice, colorSlice } from './slices/omokSlice';
 // import todoSlice from './slices/todoSlice';
 // import userSlice from './slices/userSlice';
 
