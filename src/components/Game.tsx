@@ -3,129 +3,109 @@ import React, { useRef, useState, useEffect, useCallback, useId } from 'react';
 import useHover from '../hook/hoverHook';
 import internal from 'stream';
 import { useAppDispatch, useAppSelector } from '../store/config';
-import {
-  colorBlack,
-  colorWhite,
-  putStone,
-  changeColor,
-} from '../store/slices/omokSlice';
-import { mapSize } from 'const';
-
+import { putStone, nextTurn } from '../store/slices/omokSlice';
+import { MAP_SIZE } from 'util/const';
+import type { Game } from '../type/gameType';
+import { type } from 'os';
 // 15*15
 // container 가 board 보다 1칸 더 많게
-interface Game {
-  size: number;
-  isEvent?: boolean;
-  x?: number;
-  y?: number;
-}
 
 const Item = (props: Pick<Game, 'isEvent' | 'x' | 'y'> & { num: number }) => {
   const { num, isEvent, x, y } = props;
-  const { value } = useAppSelector((state) => state.counter);
+  const { nowPlayer, prohibit } = useAppSelector((state) => state.game);
   const [click, setClick] = useState<boolean>(false);
   const [enter, setEnter] = useState<boolean>(false);
   const [leave, setLeave] = useState<boolean>(false);
   const [color, setColor] = useState<boolean>(false);
   const dispatch = useAppDispatch();
 
+  const isXY = typeof x !== 'undefined' && typeof y !== 'undefined';
+  const isProhibit = !nowPlayer && isXY && typeof prohibit[y] !== 'undefined' && typeof prohibit[y][x] !== 'undefined';
   const handleClick = () => {
-    if (!click) {
-      setColor(value);
+    if (!click && !isProhibit) {
+      setColor(nowPlayer);
       setClick(true);
       dispatch(
         putStone({
           x: x as number,
           y: y as number,
-          user: value ? 2 : 1,
+          user: nowPlayer ? 2 : 1,
         })
       );
-      dispatch(changeColor(!value));
+      dispatch(nextTurn(!nowPlayer));
     }
   };
   // const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => { };
 
-  const handleMouseEnter = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
-    if (!click) {
+  const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (!click && !isProhibit) {
       setEnter(true);
       setLeave(false);
     }
   };
 
-  const handleMouseLeave = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
-    if (!click) {
+  const handleMouseLeave = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (!click && !isProhibit) {
       setLeave(true);
       setEnter(false);
     }
   };
 
-  if (isEvent && typeof x !== 'undefined' && typeof y !== 'undefined') {
+  if (isEvent && isXY) {
+    if (x === 7 && y === 7) {
+      //index.tsx에서 StrictMode 떄문에 두번 렌더링 하는중 그래서 흰돌부터 나옴 StrictMode를 주석처리하면 원하는 결과로 나옴
+      handleClick();
+    }
+
     return (
-      <div
-        className='cell'
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-      >
+      <div className="cell" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
         {click && <div className={color ? 'unit white' : 'unit black'} />}
-        {!click && enter && !leave && (
-          <div className={value ? 'unit white shadow' : 'unit black shadow'} />
+        {!click && enter && !leave && <div className={nowPlayer ? 'unit white shadow' : 'unit black shadow'} />}
+        {!nowPlayer && typeof prohibit[y] !== 'undefined' && typeof prohibit[y][x] !== 'undefined' && (
+          <div className="unit middle">
+            <div className={`prohibit ${prohibit[y][x]}`}>{prohibit[y][x]}</div>
+          </div>
         )}
       </div>
     );
   }
 
-  return <div className='cell' />;
+  return <div className="cell" />;
 };
 
 const RowItem = (props: Game) => {
   const { size, isEvent, y } = props;
-  const key = useId();
+
   return (
-    <div className='row'>
+    <div className="row">
       {Array(size)
         .fill(undefined)
-        .map((i, index) => (
-          <Item
-            key={key}
-            num={index}
-            isEvent={isEvent}
-            x={isEvent ? index : undefined}
-            y={isEvent ? y : undefined}
-          />
-        ))}
+        .map((e, i) => {
+          const key = `item${typeof y === 'undefined' ? '' : y}_${i}`;
+          return <Item key={key} num={i} isEvent={isEvent} x={isEvent ? i : undefined} y={isEvent ? y : undefined} />;
+        })}
     </div>
   );
 };
 
 const Board = (props: Game) => {
   const { size, isEvent } = props;
-  const key = useId();
+
   return (
     <>
       {Array(size)
         .fill(undefined)
-        .map((i, index) => (
-          <RowItem
-            key={key}
-            isEvent={isEvent}
-            size={size}
-            y={isEvent ? index : undefined}
-          />
-        ))}
+        .map((e, index) => {
+          const key = `row_${index}`;
+          return <RowItem key={key} isEvent={isEvent} size={size} y={isEvent ? index : undefined} />;
+        })}
     </>
   );
 };
 
 const GameCount = () => {
   const { turn } = useAppSelector((state) => state.game);
-  return (
-    <div style={{ textAlign: 'center', fontSize: '2rem' }}>{turn}수 째</div>
-  );
+  return <div style={{ textAlign: 'center', fontSize: '2rem' }}>{turn}수 째</div>;
 };
 
 const GameWinner = () => {
@@ -137,7 +117,7 @@ const GameWinner = () => {
   );
 };
 
-const Game = () => {
+const GameComponent = () => {
   //   const { value } = useAppSelector((state) => state.counter);
   //   const dispatch = useAppDispatch();
   //   const onIncrease = () => dispatch(colorWhite(value));
@@ -145,13 +125,13 @@ const Game = () => {
 
   return (
     <>
-      <div className='center board-padding'>
-        <div className='board'>
-          <Board size={mapSize - 1} />
+      <div className="center board-padding">
+        <div className="board">
+          <Board size={MAP_SIZE - 1} />
         </div>
       </div>
-      <div className='container center'>
-        <Board size={mapSize} isEvent />
+      <div className="container center">
+        <Board size={MAP_SIZE} isEvent />
       </div>
       <div>
         <GameCount />
@@ -204,4 +184,4 @@ const Game = () => {
     </>
   );
 };
-export default Game;
+export default GameComponent;
