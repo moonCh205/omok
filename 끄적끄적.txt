@@ -27,3 +27,37 @@ visitedStone 변수와 visited 변수에 대한 문제로 금수 확인이 안�
 
 UI -> 채팅 
 
+오목 서버에서 할 일 
+엔진엑스 설치 G유니콘 설치 우분투에 파이썬은 설치된 상태 
+
+소켓 연결 
+Argument of type '{ Accept: string; }' is not assignable to parameter of type '{ method: string; headers?: { 'Content-Type'?: string | undefined; Accept?: string | undefined; } | undefined; }'.
+  Object literal may only specify known properties, and 'Accept' does not exist in type '{ method: string; headers?: { 'Content-Type'?: string | undefined; Accept?: string | undefined; } | undefined; }'.
+권한 관려 https://kyungsnim.net/176?category=883415
+
+가상환경 위치  /var/www/env/
+source /var/www/env/bin/activate
+deactivate
+ python3 manage.py makemigrations
+python3 manage.py migrate
+sudo systemctl daemon-reload
+
+sudo systemctl start gunicorn.service
+sudo systemctl status gunicorn.service
+https://velog.io/@seanlion/daphnenginxtroubleshooting
+
+chown {소유권자}:{그룹식별자} {소유권을 변경하고 싶은 파일명}
+
+메인페이지 진입시 토큰 유무 확인 -> 어떻게 : rest API로
+토큰이 없다면 새로 발급 
+    캐시에 저장
+있다면 로그인
+
+파이썬 연습 
+https://jupyter.org/try-jupyter/retro/notebooks/?path=Untitled.ipynb
+
+
+아래 URL 참고
+https://blog.naver.com/PostView.naver?blogId=kbh3983&logNo=222436008591&parentCategoryNo=&categoryNo=&viewDate=&isShowPopularPosts=false&from=postView
+
+방 생성 -> 캐시에 set ->sadd로 집합에 추가 ->sscan으로 원하는 만큼 가저오기

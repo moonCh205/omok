@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# React로 만든 오목
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+AI 대전 , 멀티플레이 기능까지 개발 될 예정이다.
 
 ## Available Scripts
 

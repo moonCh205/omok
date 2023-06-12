@@ -1,0 +1,39 @@
+/* .homeWrap {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+} */
+.homeWrap {
+  display: grid;
+  grid-template-columns: 3fr 6fr 3fr;
+  column-gap: 20px;
+  grid-auto-rows: minmax(100px, auto);
+}
+.homeWrap > div {
+  display: inline-block;
+}
+.interval {
+  padding: 20 px 0;
+}
+.leftLayout {
+  display: grid;
+}
+.leftLayout > div {
+  display: inline-block;
+  margin: 10px 0;
+}
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background-color: gray;
+}
+::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+}
