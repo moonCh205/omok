@@ -32,7 +32,8 @@ const GamePageComponent = () => {
             <GameComponent id={params.id} /*onClick={}*/ />
           </Grid>
           <Grid item xs>
-            <Chatting roomName={`game${params.id}`} />
+            <Chatting />
+            {/* roomName={`game${params.id}`} */}
           </Grid>
         </Grid>
       </div>

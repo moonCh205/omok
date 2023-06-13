@@ -1,18 +1,23 @@
 import React, { useRef, useState, useEffect, KeyboardEvent } from 'react';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { useAppDispatch, useAppSelector } from 'store/config';
-import { getCookie, setCookie } from '../util/util';
-import { WS_ADDRESS } from '../util/const';
 import type { Chatting } from '../type/chatType';
-import { WidthFull } from '@mui/icons-material';
+
+const sx = {
+  listItem: { width: '100%', backgroundColor: '#eee', borderRadius: '10px', display: 'list-item' },
+  card: { width: '100%', maxWidth: 375, bgcolor: 'background.default' },
+  list: { width: '100%', bgcolor: 'background.paper', minHeight: '830px', maxHeight: '830px', overflowY: 'auto' },
+  typographySys: { display: 'inline', fontWeight: '700' },
+  typography: { display: 'inline' },
+  listItemText: { wordBreak: 'break-all' },
+  w: { width: '100%' },
+};
 const Basic = (props: Chatting) => {
   const { user, sandTime, message } = props;
   let time: string = sandTime?.toString() ?? '';
@@ -24,45 +29,40 @@ const Basic = (props: Chatting) => {
     unit = hours < 12 ? '오후' : unit;
   }
   time = `${unit} ${hours}:${dateTime.getMinutes()}:${dateTime.getSeconds()}`;
+  const pStyle = {
+    p1: { color: '#1976d2', margin: 0 },
+    p2: { color: '#1976d2', textAlign: 'right' as const, margin: 0 },
+  };
   return (
     <div>
-      <ListItem
-        alignItems="flex-start"
-        sx={{ width: '100%', backgroundColor: '#eee', borderRadius: '10px', display: 'list-item' }}
-      >
-        <p style={{ color: '#1976d2', margin: 0 }}>
+      <ListItem alignItems="flex-start" sx={sx.listItem}>
+        <p style={pStyle.p1}>
           {user?.nickname}(#{user?.index})
         </p>
 
         <ListItemText
           secondary={
             <React.Fragment>
-              <Typography sx={{ display: 'inline' }} component="span" variant="body1" color="#333">
+              <Typography sx={sx.typography} component="span" variant="body1" color="#333">
                 {message}
               </Typography>
             </React.Fragment>
           }
-          sx={{ wordBreak: 'break-all' }}
+          sx={sx.listItemText}
         />
       </ListItem>
-      <p style={{ color: '#1976d2', textAlign: 'right', margin: 0 }}>{time}</p>
+      <p style={pStyle.p2}>{time}</p>
     </div>
   );
 };
 const System = (props: Chatting) => {
-  const { user, sandTime, message } = props;
   return (
-    <ListItem alignItems="flex-start" sx={{ width: '100%' }}>
+    <ListItem alignItems="flex-start" sx={sx.w}>
       <ListItemText
         secondary={
           <React.Fragment>
-            <Typography
-              sx={{ display: 'inline', fontWeight: '700' }}
-              component="span"
-              variant="body2"
-              color="text.primary"
-            >
-              {message}
+            <Typography sx={sx.typographySys} component="span" variant="body2" color="text.primary">
+              {props.message}
             </Typography>
           </React.Fragment>
         }
@@ -71,58 +71,48 @@ const System = (props: Chatting) => {
   );
 };
 const ChatItem = (props: Chatting) => {
-  const { user, sandTime, message, messageType } = props;
   let returnItem;
-  switch (messageType) {
+  switch (props.messageType) {
     case 'system':
-      returnItem = <System {...props} />;
+      returnItem = (
+        <System user={props.user} message={props.message} messageType={props.messageType} sandTime={props.sandTime} />
+      );
       break;
     default:
-      returnItem = <Basic {...props} />;
+      returnItem = (
+        <Basic user={props.user} message={props.message} messageType={props.messageType} sandTime={props.sandTime} />
+      );
   }
   return returnItem;
 };
-
-export default function AlignItemsList(prors: { roomName: string }) {
-  const [ws, setWs] = useState<WebSocket | null>(null);
+const MemoizedChatItem = React.memo(ChatItem);
+export default function AlignItemsList() {
   const [items, setItems] = useState<Chatting[]>([]);
   const chatText = useRef<HTMLDivElement>(null);
-  // const query_string = '?id=' + getCookie('USERID');
-  const [userID, changeUserID] = useState<string | undefined>(getCookie('USERID'));
   const userInfos = useAppSelector((state) => state.user);
   const rename = useAppSelector((state) => state.user.rename);
-  useEffect(() => {
-    console.log('마운트');
-    if (userID !== undefined) {
-      const websocket = new WebSocket(`${WS_ADDRESS}chat/${prors.roomName}/${userID}`);
-      setWs(websocket);
-    } else {
-      setTimeout(() => {
-        changeUserID(getCookie('USERID'));
-      }, 1000);
-    }
-    return () => {
-      console.log('언마운트');
-      ws?.close();
-    };
-  }, [userID]);
-  if (ws) {
-    ws.onmessage = (e) => {
+  const ws = useAppSelector((state) => state.ws);
+  const chat = ws.chat.ws;
+  let count = 0;
+
+  // useEffect(() => {
+  if (chat.socket) {
+    console.log('소켓연결됨');
+    chat.socket.onmessage = (e) => {
       const receiveData = JSON.parse(e.data);
-      console.log('받음');
+      console.log(receiveData);
       setItems([...items, receiveData]);
     };
-    ws.onopen = () => {};
   }
-  const send = (json: Chatting | { event: string; value: string }) => {
-    console.log(ws, open);
-    if (ws) {
-      console.log('s');
-      ws.send(JSON.stringify(json));
+  // }, []);
+  console.log(items);
+  const send = (data: Chatting | { event: string; value: string }) => {
+    if (chat) {
+      chat.send(data);
     }
   };
   const handleOnKeyPress = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && ws) {
+    if (e.key === 'Enter' && chat) {
       send({
         message: chatText.current!.querySelector('input')!.value,
         sandTime: new Date(),
@@ -137,25 +127,25 @@ export default function AlignItemsList(prors: { roomName: string }) {
       event: 'rename',
     });
   }
-  return (
-    <Card sx={{ width: '100%', maxWidth: 375, bgcolor: 'background.default' }}>
-      <List
-        sx={{ width: '100%', bgcolor: 'background.paper', minHeight: '830px', maxHeight: '830px', overflowY: 'auto' }}
-      >
-        {items.length === 0
-          ? '아직 채팅이 없습니다'
-          : items.map((props, i) => {
-              console.log(props);
-              let key = '';
-              if (props.user !== undefined) {
-                key = `${props.user?.nickname}${props.sandTime}`;
-              } else {
-                key = new Date().getTime().toString();
-              }
+  const my = items.map((props, i) => {
+    let key = `${props.sandTime}`;
+    if (props.messageType === undefined) {
+      key += props.user?.index;
+    }
 
-              return <ChatItem {...props} key={key} />;
-            })}
-      </List>
+    return (
+      <MemoizedChatItem
+        user={props.user}
+        message={props.message}
+        messageType={props.messageType}
+        sandTime={props.sandTime}
+        key={key}
+      />
+    );
+  });
+  return (
+    <Card sx={sx.card}>
+      <List sx={sx.list}>{my}</List>
 
       <Box
         sx={{

@@ -61,3 +61,6 @@ https://jupyter.org/try-jupyter/retro/notebooks/?path=Untitled.ipynb
 https://blog.naver.com/PostView.naver?blogId=kbh3983&logNo=222436008591&parentCategoryNo=&categoryNo=&viewDate=&isShowPopularPosts=false&from=postView
 
 방 생성 -> 캐시에 set ->sadd로 집합에 추가 ->sscan으로 원하는 만큼 가저오기
+
+내일 할 일
+https://trytoso.tistory.com/1601

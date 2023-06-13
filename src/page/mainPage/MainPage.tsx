@@ -12,13 +12,15 @@ import { getCookie, setCookie, JsonHttpReponse } from 'util/util';
 import type { UserInfo as User } from 'type/userType';
 import './mainPage.css';
 import { login } from 'store/slices/userSlice';
+import { connect } from 'store/slices/wsSlice';
+import { WS_ADDRESS } from 'util/const';
 const HomeComponent = () => {
   const [pk, setPk] = useState<string>('');
   const userInfos: User = useAppSelector((state) => state.user);
   console.log(userInfos, 'userInfos입니다');
   // const { nickname, win, defeat, userId } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
-
+  const roomName = 'test1';
   useEffect(() => {
     console.log('동작');
     if (getCookie('USERID') === undefined) {
@@ -33,8 +35,11 @@ const HomeComponent = () => {
         setPk(hash);
       });
     } else {
-      JsonHttpReponse(`${HTTP_ADDRESS}storage/user/${getCookie('USERID')}`).then((data) => {
-        dispatch(login({ ...data, userId: getCookie('USERID') }));
+      const userID = getCookie('USERID');
+      JsonHttpReponse(`${HTTP_ADDRESS}storage/user/${userID}`).then((data) => {
+        console.log(data);
+        dispatch(login({ ...data, userId: userID }));
+        dispatch(connect({ url: `${WS_ADDRESS}chat/${roomName}/${userID}`, type: 'chat' }));
       });
     }
   }, [pk]);
@@ -63,7 +68,7 @@ const HomeComponent = () => {
             <GameList />
           </Grid>
           <Grid item xs>
-            <Chatting roomName={'test1'} />
+            <Chatting />
           </Grid>
         </Grid>
       </div>
