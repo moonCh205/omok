@@ -7,7 +7,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { useAppDispatch, useAppSelector } from 'store/config';
-import type { Chatting } from '../type/chatType';
+import type { Chatting } from '../util/type/chatType';
 
 const sx = {
   listItem: { width: '100%', backgroundColor: '#eee', borderRadius: '10px', display: 'list-item' },
@@ -93,19 +93,14 @@ export default function AlignItemsList() {
   const rename = useAppSelector((state) => state.user.rename);
   const ws = useAppSelector((state) => state.ws);
   const chat = ws.chat.ws;
-  let count = 0;
 
-  // useEffect(() => {
   if (chat.socket) {
-    console.log('소켓연결됨');
+    // console.log('소켓연결됨');
     chat.socket.onmessage = (e) => {
       const receiveData = JSON.parse(e.data);
-      console.log(receiveData);
       setItems([...items, receiveData]);
     };
   }
-  // }, []);
-  console.log(items);
   const send = (data: Chatting | { event: string; value: string }) => {
     if (chat) {
       chat.send(data);

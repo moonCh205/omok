@@ -1,10 +1,11 @@
 // 게임창
 import React, { useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/config';
-import { putStone, nextTurn } from '../store/slices/omokSlice';
+import { putStone, nextTurn, putStoneAI, setAi } from '../store/slices/omokSlice';
 
-import type { GameWS, info } from '../type/gameType';
+import type { AI, GameWS, info, NextTurnAction } from '../util/type/gameType';
 import { WS_ADDRESS, MAP_SIZE } from 'util/const';
+import { miniMaxAB } from 'util/Ai/main';
 // 15*15
 // container 가 board 보다 1칸 더 많게
 
@@ -21,15 +22,18 @@ const GameWinner = () => {
     </div>
   );
 };
-const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws'> & { sand?: boolean }) => {
-  const { isEvent, x, y, ws } = props;
+const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws' | 'myColor'> & { sand?: boolean; id?: number }) => {
+  const { isEvent, x, y, ws, myColor } = props;
   const { nowPlayer, prohibit } = useAppSelector((state) => state.game);
+  const state = useAppSelector((state) => state.game);
   const [click, setClick] = useState<boolean>(false);
   const [enter, setEnter] = useState<boolean>(false);
   const [leave, setLeave] = useState<boolean>(false);
   const [color, setColor] = useState<boolean>(false);
   const [data, setData] = useState<info | null>(null);
   const dispatch = useAppDispatch();
+  const ai: AI = myColor ? 'BLACK' : 'WHITE';
+  const [temp, setTemp] = useState<boolean>(false);
   useEffect(() => {
     if (click) {
       dispatch(
@@ -48,9 +52,36 @@ const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws'> & { sand?: boole
           })
         );
       }
-      dispatch(nextTurn(!nowPlayer));
+      if (myColor !== undefined) dispatch(nextTurn({ player: !nowPlayer, ai: ai, myColor: myColor, difficulty: 0 }));
+      // console.log(state.nowPlayer === myColor);
+      if (state.nowPlayer === myColor) {
+        setTemp(true);
+      }
     }
   }, [click]);
+  useEffect(() => {
+    if (temp) {
+      if (state.turn > 0 && state.nowPlayer !== myColor) {
+        const clone = JSON.parse(JSON.stringify(state));
+        setTimeout(() => {
+          const start = Date.now();
+          let a = miniMaxAB(0, ai, clone);
+          console.log(a);
+          const end = Date.now();
+          console.log(end - start + 'ms');
+          dispatch(
+            setAi({
+              x: a[1],
+              y: a[0] as number,
+              user: state.nowPlayer ? 2 : 1,
+            })
+          );
+          setTemp(false);
+        }, 0);
+      }
+      console.log('AI함수 실행', state.nowPlayer, myColor);
+    }
+  }, [temp]);
   if (isEvent) {
     const isXY = typeof x !== 'undefined' && typeof y !== 'undefined';
     const isProhibit =
@@ -63,15 +94,19 @@ const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws'> & { sand?: boole
     };
     // const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => { };
     const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      if (!click && !isProhibit) {
-        setEnter(true);
-        setLeave(false);
+      if (nowPlayer === myColor) {
+        if (!click && !isProhibit) {
+          setEnter(true);
+          setLeave(false);
+        }
       }
     };
     const handleMouseLeave = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      if (!click && !isProhibit) {
-        setLeave(true);
-        setEnter(false);
+      if (nowPlayer === myColor) {
+        if (!click && !isProhibit) {
+          setLeave(true);
+          setEnter(false);
+        }
       }
     };
     if (isEvent && isXY) {
@@ -81,8 +116,14 @@ const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws'> & { sand?: boole
       } else if (props.sand) {
         handleClick();
       }
+
       return (
-        <div className="cell" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+        <div
+          className="cell"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onClick={nowPlayer === myColor ? handleClick : () => {}}
+        >
           {click && <div className={color ? 'unit white' : 'unit black'} />}
           {!click && enter && !leave && <div className={nowPlayer ? 'unit white shadow' : 'unit black shadow'} />}
           {!nowPlayer && typeof prohibit[y] !== 'undefined' && typeof prohibit[y][x] !== 'undefined' && (
@@ -97,8 +138,8 @@ const Item = (props: Pick<GameWS, 'isEvent' | 'x' | 'y' | 'ws'> & { sand?: boole
 
   return <div className="cell" />;
 };
-const Board = (props: GameWS) => {
-  const { size, isEvent, ws, data } = props;
+const Board = (props: GameWS & { id?: number }) => {
+  const { size, isEvent, ws, data, myColor, id } = props;
 
   return (
     <>
@@ -121,6 +162,8 @@ const Board = (props: GameWS) => {
                       y={isEvent ? index : undefined}
                       sand={data && i === data.x && index === data.y ? true : false}
                       ws={isEvent ? ws : undefined}
+                      myColor={myColor}
+                      id={id}
                     />
                   );
                 })}
@@ -130,25 +173,42 @@ const Board = (props: GameWS) => {
     </>
   );
 };
-const GameComponent = (props: {
-  id?: string;
-  onClick?: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-}) => {
+
+import { gameUtil, aiGameUtil } from 'store/controller/omokSliceController';
+
+const GameComponent = (props: { id: string; mode?: boolean }) => {
   const [ws, changeWs] = useState<WebSocket | null>(null);
   const [data, setData] = useState<info | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [myColor, setMyColor] = useState<boolean>(false);
   const chatText = useRef<HTMLDivElement>(null);
-
+  const { ai } = useAppSelector((state) => state.game);
   useEffect(() => {
-    console.log('게임판마운트');
-    const websocket = new WebSocket(`${WS_ADDRESS}game/${props.id}`);
-    changeWs(websocket);
-    return () => {
-      console.log('게임판언마운트');
-      websocket?.close();
-      ws?.close();
+    if (props.mode) {
+      const turn = Math.floor(Math.random() * 10) % 2 === 0 ? false : true; // 0 이면 흑돌 1이면 백돌
+      setMyColor(turn);
+      setLoading(true);
+      // miniMaxAB(props.id,)
+    }
+    if (!props.mode) {
+      // console.log('게임판마운트');
+      const websocket = new WebSocket(`${WS_ADDRESS}game/${props.id}`);
       changeWs(websocket);
+    }
+
+    return () => {
+      if (!props.mode) {
+        // console.log('게임판언마운트');
+        // websocket?.close();
+        ws?.close();
+        // changeWs(websocket);
+      }
     };
   }, []);
+  useEffect(() => {
+    const temp: any = { x: ai[1], y: ai[0] };
+    setData(temp);
+  }, [ai]);
   if (ws) {
     ws!.onopen = () => {};
     ws.onmessage = (e) => {
@@ -156,21 +216,59 @@ const GameComponent = (props: {
       setData(mydata);
     };
   }
+
+  // console.log(
+  //   aiGameUtil.defenseScore(
+  //     [
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //     ],
+  //     3,
+  //     6,
+  //     false,
+  //     1
+  //   )
+  // );
+
   return (
-    <>
-      <div className="center board-padding">
-        <div className="board">
-          <Board size={MAP_SIZE - 1} />
-        </div>
-      </div>
-      <div className="container center">
-        <Board size={MAP_SIZE} isEvent data={data} ws={ws} />
-      </div>
-      <div>
-        <GameCount />
-        <GameWinner />
-      </div>
-    </>
+    <div style={{ position: 'relative', height: '100%' }}>
+      {loading && (
+        <>
+          <div className="center board-padding">
+            <div className="board">
+              <Board size={MAP_SIZE - 1} />
+            </div>
+          </div>
+          <div className="container center">
+            <Board size={MAP_SIZE} isEvent data={data} ws={ws} myColor={myColor} id={parseInt(props.id)} />
+          </div>
+          <div>
+            <GameCount />
+            <GameWinner />
+          </div>
+        </>
+      )}
+      {!loading && (
+        <>
+          <div>
+            <p>로딩중...</p>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 export default GameComponent;

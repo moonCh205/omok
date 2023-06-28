@@ -7,7 +7,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import type { Room } from 'type/gameType';
+import type { Room } from 'util/type/gameType';
 
 export default function BasicTable() {
   return (
@@ -27,25 +27,6 @@ export default function BasicTable() {
     </TableContainer>
   );
 }
-
-// function NavRow(props: Room) {
-//   const navigate = useNavigate();
-//   const onClickEvent = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
-//     console.log(props);
-//     navigate(`/game/${props['data-index']}`);
-//   };<TableRow {...props} onClick={onClickEvent} />;
-//   return (
-//     <TableRow key={row.name} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-//         <TableCell component="th" scope="row">
-//           {row.name}
-//         </TableCell>
-//         <TableCell align="right">{row.calories}</TableCell>
-//         <TableCell align="right">{row.fat}</TableCell>
-//         <TableCell align="right">{row.carbs}</TableCell>
-//         <TableCell align="right">{row.protein}</TableCell>
-//       </TableRow>
-//   )
-// }
 
 import FormControl from '@mui/material/FormControl';
 import { styled } from '@mui/material/styles';
@@ -103,12 +84,24 @@ const BootstrapInput = styled(InputBase)(({ theme }) => ({
 export const GameTopLayout = () => {
   const [open, setOpen] = React.useState(false);
   const [gameMode, setGameMode] = React.useState<Boolean>(false);
+  const [difficulty, setDifficulty] = React.useState<number>(0);
+  const navigate = useNavigate();
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
+  };
+  const handleCreateRoom = () => {
+    setOpen(false);
+    if (gameMode) {
+      const onClickEvent = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
+        // navigate(`/game/${}`);
+      };
+    } else {
+      navigate(`/ai_game/${difficulty}`);
+    }
   };
   return (
     <div>
@@ -129,11 +122,13 @@ export const GameTopLayout = () => {
           <DialogContent>
             <FormControl>
               <FormLabel id="demo-row-radio-buttons-group-label">모드</FormLabel>
-              <RadioGroup row aria-labelledby="demo-row-radio-buttons-group-label" name="row-radio-buttons-group">
+              <RadioGroup row aria-labelledby="demo-row-radio-buttons-group-label">
                 <FormControlLabel
                   value="alone"
                   control={
                     <Radio
+                      name="mode"
+                      checked={gameMode == false}
                       onChange={() => {
                         setGameMode(false);
                       }}
@@ -145,6 +140,8 @@ export const GameTopLayout = () => {
                   value="together"
                   control={
                     <Radio
+                      checked={gameMode == true}
+                      name="mode"
                       onChange={() => {
                         setGameMode(true);
                       }}
@@ -168,10 +165,58 @@ export const GameTopLayout = () => {
                 />
               </>
             )}
+            {!gameMode && (
+              <div>
+                <FormControl>
+                  <FormLabel id="demo-row-radio-buttons-group-label">난이도를 선택해주세요</FormLabel>
+                  <RadioGroup row aria-labelledby="demo-row-radio-buttons-group-label">
+                    <FormControlLabel
+                      value="1"
+                      control={
+                        <Radio
+                          name="difficulty"
+                          checked={difficulty === 0}
+                          onChange={() => {
+                            setDifficulty(0);
+                          }}
+                        />
+                      }
+                      label="초급"
+                    />
+                    <FormControlLabel
+                      value="2"
+                      control={
+                        <Radio
+                          checked={difficulty === 1}
+                          name="difficulty"
+                          onChange={() => {
+                            setDifficulty(1);
+                          }}
+                        />
+                      }
+                      label="중급"
+                    />
+                    <FormControlLabel
+                      value="3"
+                      control={
+                        <Radio
+                          checked={difficulty === 2}
+                          name="difficulty"
+                          onChange={() => {
+                            setDifficulty(2);
+                          }}
+                        />
+                      }
+                      label="고급"
+                    />
+                  </RadioGroup>
+                </FormControl>
+              </div>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>취소</Button>
-            <Button onClick={handleClose}>생성</Button>
+            <Button onClick={handleCreateRoom}>생성</Button>
           </DialogActions>
         </Dialog>
       </div>

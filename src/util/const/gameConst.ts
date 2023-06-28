@@ -1,0 +1,32 @@
+const HIGH_DEPTH_BOUND = 4;
+const MEDIUM_DEPTH_BOUND = 3;
+const LOW_DEPTH_BOUND = 2;
+export const enum DIFFICULTY {
+  LOW,
+  MEDIUM,
+  HIGH,
+}
+export const DEPTH_ARR = [LOW_DEPTH_BOUND, MEDIUM_DEPTH_BOUND, HIGH_DEPTH_BOUND];
+export const enum SCORE_RULE {
+  TIE = 0,
+  MAX_WIN = 999999,
+  MINI_WIN = -99999,
+}
+export enum MAX_SCORE {
+  SCORE_WIN = 999999,
+  SCORE_OPEN_4 = 9999,
+  SCORE_OPEN_3 = 999,
+  SCORE_4 = 99,
+  SCORE_3 = 9,
+  SCORE_2 = 2,
+  SCORE_1 = 1,
+}
+export enum MINI_SCORE {
+  SCORE_WIN = -99999,
+  SCORE_OPEN_4 = -9999,
+  SCORE_OPEN_3 = -999,
+  SCORE_4 = -99,
+  SCORE_3 = -9,
+  SCORE_2 = -2,
+  SCORE_1 = -1,
+}

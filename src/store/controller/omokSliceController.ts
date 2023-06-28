@@ -1,6 +1,7 @@
 import { MAP_SIZE } from 'util/const';
 import { customLog } from 'util/util';
-import type { StoneInfo, GameState, Coordinate, postionState, ProhibitInfo, StoneCount } from '../../type/gameType';
+import type { StoneInfo, GameState, Coordinate, AI, ProhibitInfo, StoneCount, Minimax } from 'util/type/gameType';
+import { MAX_SCORE } from 'util/const/gameConst';
 export const gameUtil = {
   inintState: function (): GameState {
     return {
@@ -11,7 +12,10 @@ export const gameUtil = {
       white: {},
       response: { win: 0 },
       nowPlayer: false,
+      ai: [],
       prohibit: {},
+      x: { mini: MAP_SIZE, max: -1 },
+      y: { mini: MAP_SIZE, max: -1 },
     };
   },
   setArr: () => {
@@ -23,6 +27,28 @@ export const gameUtil = {
       }
     }
     return gamePanel;
+  },
+  changeYX: (inputY: number, inputX: number, stateY: Minimax, stateX: Minimax) => {
+    if (inputY < stateY.mini) {
+      const newY = inputY - 3;
+      if (newY >= 0) stateY.mini = newY;
+      else stateY.mini = inputY;
+    }
+    if (inputY > stateY.max) {
+      const newY = inputY + 3;
+      if (newY < MAP_SIZE) stateY.max = newY;
+      else stateY.max = inputY;
+    }
+    if (inputX < stateX.mini) {
+      const newX = inputX - 3;
+      if (newX >= 0) stateX.mini = newX;
+      else stateX.mini = inputX;
+    }
+    if (inputX > stateX.max) {
+      const newX = inputX + 3;
+      if (newX < MAP_SIZE) stateX.max = newX;
+      else stateX.max = inputX;
+    }
   },
   makeElement: (obj: StoneInfo, y: number) => {
     if (typeof obj[y] === 'undefined') {
@@ -329,5 +355,306 @@ export const gameUtil = {
     });
 
     return prohibit;
+  },
+};
+/** AI : 1 , user : 2
+ * 돌이 배치 된 상태;
+ * 일단 흑돌 백돌 상태를 확인해야한다
+ * 그리고 AI가 흑돌인 경우라고 가정 할 경우
+ * 흑이 곧은 사 이다. 999
+ * 흑이 삼이다. 888
+ * 흑이 사이다. 99
+ * 흑이 연결된 돌이 3개가 있다 (한 쪽 막힌 상태). 10
+ * 연결된 돌이 2개가 있다. 9
+ * 연결된 돌이 2개가 있다 (한 쪽 막힌 상태). 2
+ * 돌이 한개 있다. 2
+ *
+ * 백이 곧은 사 이다. 900
+ * 백이 삼이다 800
+ * 백이 사이다 88
+ * 백이 연결된 돌이 3개가 있다 (한 쪽 막힌 상태). 6
+ * 연결된 돌이 2개가 있다. 8
+ * 연결된 돌이 2개가 있다 (한 쪽 막힌 상태). 1
+ * 돌이 한개 있다. 1
+ * 0 2 0 2 0 =>
+ * 1 2 2 2 0 => 1 2 2 2 1  :  ??
+ * 0 2 2 2 0 => 1 2 2 2 0  :  ??
+ * 1 2 2 2 2 => 1 2 2 2 1  :  ??
+ *
+ **/
+type key = 'first' | 'second';
+type searchKey = 'firstEmpty' | 'secondEmpty' | 'firstOtherStone' | 'secondOtherStone';
+export const aiGameUtil = {
+  // 다음으로 확인해야하는 XY좌표를 반환함 first 뱡향과 second 뱡향이 있음
+  setPostion: (y: number, x: number, type: number) => {
+    const top = y - 1;
+    const bottom = y + 1;
+    const rigth = x + 1;
+    const left = x - 1;
+    const initState = { x: -1, y: -1, overflow: false };
+    const response: { first: Coordinate; second: Coordinate } = { first: initState, second: initState };
+    switch (type) {
+      case 1:
+        response.first = { x: x, y: top, overflow: 0 <= top };
+        response.second = { x: x, y: bottom, overflow: MAP_SIZE > bottom };
+        break;
+      case 2:
+        response.first = { x: rigth, y: y, overflow: MAP_SIZE > rigth };
+        response.second = { x: left, y: y, overflow: 0 <= left };
+        break;
+      case 3:
+        response.first = {
+          x: rigth,
+          y: top,
+          overflow: MAP_SIZE > rigth && 0 <= top,
+        };
+        response.second = {
+          x: left,
+          y: bottom,
+          overflow: 0 <= left && MAP_SIZE > bottom,
+        };
+        break;
+      case 4:
+        response.first = { x: left, y: top, overflow: 0 <= left && 0 <= top };
+        response.second = {
+          x: rigth,
+          y: bottom,
+          overflow: MAP_SIZE > rigth && MAP_SIZE > bottom,
+        };
+        break;
+    }
+
+    return response;
+  },
+  defenseScore(map: number[][], y: number, x: number, nowPlayer: number, searchType: number) {
+    // XY 좌표 주변에 다른돌이 연속으로 오는가
+    // const myStone = ai === 'BLACK' ? 1 : 2;
+    const myStone = nowPlayer;
+    const otherStone = myStone === 2 ? 1 : 2;
+    const q = [[y, x]];
+    const visited: StoneInfo = {};
+    const search = {
+      first: {
+        empty: false,
+        otherStone: false,
+        count: 0,
+      },
+      second: {
+        empty: false,
+        otherStone: false,
+        count: 0,
+      },
+      count: 0,
+    };
+    while (q.length !== 0) {
+      let [y, x]: number[] = q.shift() as Array<number>;
+      const temp = this.setPostion(y, x, searchType);
+      const arr: key[] = ['first', 'second'];
+      gameUtil.makeElement(visited, y);
+      if (typeof visited[y][x] === 'undefined') visited[y][x] = true;
+      arr.forEach((key) => {
+        if (temp[key].overflow) {
+          const y = temp[key].y;
+          const x = temp[key].x;
+          gameUtil.makeElement(visited, y);
+
+          if (typeof visited[y][x] === 'undefined') {
+            if (map[y][x] === otherStone) {
+              search.count++;
+              search[key].count++;
+              q.push([y, x]);
+            } else if (map[y][x] === myStone) {
+              search[key].otherStone = true;
+            } else if (map[y][x] === 0) {
+              if (!search[key].empty) {
+                search[key].empty = true;
+              }
+            }
+          }
+        }
+      });
+    }
+    let score = 0;
+    if (search.count >= 4) {
+      if (
+        (!search.first.otherStone && !search.second.otherStone) ||
+        (search.first.otherStone && search.second.count === 0) ||
+        (search.second.otherStone && search.first.count === 0)
+      ) {
+        score = 8888;
+      }
+    } else if (!search.first.otherStone && !search.second.otherStone) {
+      switch (search.count) {
+        case 3:
+          score = 777;
+          break;
+        case 2:
+          score = 4;
+          break;
+        case 1:
+          score = 2;
+          break;
+      }
+    } else if (
+      (search.first.otherStone && search.second.count === 0) ||
+      (search.second.otherStone && search.first.count === 0) ||
+      (search.first.otherStone && !search.second.otherStone) ||
+      (!search.first.otherStone && search.second.otherStone)
+    ) {
+      switch (search.count) {
+        case 3:
+          score = 5;
+          break;
+        case 2:
+          score = 3;
+          break;
+        case 1:
+          score = 1;
+          break;
+      }
+    }
+    return score;
+  },
+
+  attackScore(map: number[][], y: number, x: number, nowPlayer: number, searchType: number) {
+    // XY주변에 내 돌이 연속으로 있는가
+    // const myStone = ai === 'BLACK' ? 1 : 2;
+    // const myStone = nowPlayer ? 2 : 1;
+    // const otherStone = myStone === 2 ? 1 : 2;
+    const myStone = nowPlayer;
+    const otherStone = myStone === 2 ? 1 : 2;
+    const q = [[y, x]];
+    const visited: StoneInfo = {};
+    const search = {
+      first: {
+        empty: false,
+        otherStone: false,
+        count: 0,
+      },
+      second: {
+        empty: false,
+        otherStone: false,
+        count: 0,
+      },
+      count: 1,
+    };
+    while (q.length !== 0) {
+      let [y, x]: number[] = q.shift() as Array<number>;
+      const temp = this.setPostion(y, x, searchType);
+      const arr: key[] = ['first', 'second'];
+      gameUtil.makeElement(visited, y);
+      if (typeof visited[y][x] === 'undefined') visited[y][x] = true;
+      arr.forEach((key) => {
+        let stop = false;
+        while (!stop) {
+          if (temp[key].overflow) {
+            const y = temp[key].y;
+            const x = temp[key].x;
+            gameUtil.makeElement(visited, y);
+            if (typeof visited[y][x] === 'undefined') {
+              if (map[y][x] === myStone) {
+                search.count++;
+                search[key].count++;
+                q.push([y, x]);
+                stop = true;
+              } else if (map[y][x] === otherStone) {
+                search[key].otherStone = true;
+                stop = true;
+              } else if (map[y][x] === 0) {
+                if (!search[key].empty) {
+                  search[key].empty = true;
+                  const a = this.setPostion(temp[key].y, temp[key].x, searchType);
+                  temp[key] = a[key];
+                } else {
+                  stop = true;
+                }
+              } else {
+                stop = true;
+              }
+            } else {
+              stop = true;
+            }
+          } else {
+            stop = true;
+          }
+        }
+      });
+    }
+    let score = 0;
+
+    if (!search.first.otherStone && !search.second.otherStone) {
+      switch (search.count) {
+        case 5:
+        case 4:
+          score = 9999;
+          break;
+        case 3:
+          score = 999;
+          break;
+        case 2:
+          score = 5;
+          break;
+        case 1:
+          score = 2;
+          break;
+      }
+    } else if (
+      (search.first.otherStone && search.second.count === 0) ||
+      (search.second.otherStone && search.first.count === 0) ||
+      (search.first.otherStone && !search.second.otherStone) ||
+      (!search.first.otherStone && search.second.otherStone)
+    ) {
+      switch (search.count) {
+        case 5:
+          score = 9999;
+          break;
+        case 4:
+          score = 888;
+          break;
+        case 3:
+          score = 6;
+          break;
+        case 2:
+          score = 4;
+          break;
+        case 1:
+          score = 1;
+          break;
+      }
+    }
+    return score;
+  },
+  evaluate(map: number[][], y: number, x: number, nowPlayer: boolean, ai: AI) {
+    const myAI = ai === 'BLACK' ? 1 : 2;
+    let userScore = 0;
+    let aiScore = 0;
+
+    for (let y = 0; y < MAP_SIZE; y++) {
+      for (let x = 0; x < MAP_SIZE; x++) {
+        if (map[y][x] !== 0) {
+          const loop = [1, 2, 3, 4];
+          let attackScore = 0;
+          let defenseScore = 0;
+          loop.forEach((e) => {
+            attackScore += this.attackScore(map, y, x, map[y][x], e);
+            defenseScore += this.defenseScore(map, y, x, map[y][x], e);
+          });
+          if (myAI === map[y][x]) {
+            if (attackScore > defenseScore) {
+              aiScore += attackScore;
+            } else {
+              aiScore += defenseScore;
+            }
+          } else {
+            if (attackScore > defenseScore) {
+              userScore += attackScore;
+            } else {
+              userScore += defenseScore;
+            }
+          }
+        }
+      }
+    }
+    return aiScore - userScore;
   },
 };

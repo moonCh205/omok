@@ -25,16 +25,6 @@ visitedStone 변수와 visited 변수에 대한 문제로 금수 확인이 안�
 유저 구분 짓고 
 오목 AI 작성 시작
 
-UI -> 채팅 
-
-오목 서버에서 할 일 
-엔진엑스 설치 G유니콘 설치 우분투에 파이썬은 설치된 상태 
-
-소켓 연결 
-Argument of type '{ Accept: string; }' is not assignable to parameter of type '{ method: string; headers?: { 'Content-Type'?: string | undefined; Accept?: string | undefined; } | undefined; }'.
-  Object literal may only specify known properties, and 'Accept' does not exist in type '{ method: string; headers?: { 'Content-Type'?: string | undefined; Accept?: string | undefined; } | undefined; }'.
-권한 관려 https://kyungsnim.net/176?category=883415
-
 가상환경 위치  /var/www/env/
 source /var/www/env/bin/activate
 deactivate
@@ -48,11 +38,6 @@ https://velog.io/@seanlion/daphnenginxtroubleshooting
 
 chown {소유권자}:{그룹식별자} {소유권을 변경하고 싶은 파일명}
 
-메인페이지 진입시 토큰 유무 확인 -> 어떻게 : rest API로
-토큰이 없다면 새로 발급 
-    캐시에 저장
-있다면 로그인
-
 파이썬 연습 
 https://jupyter.org/try-jupyter/retro/notebooks/?path=Untitled.ipynb
 
@@ -64,3 +49,40 @@ https://blog.naver.com/PostView.naver?blogId=kbh3983&logNo=222436008591&parentCa
 
 내일 할 일
 https://trytoso.tistory.com/1601
+
+
+새로고침 시에도 소캣 연결을 위해 웹 소켓을 worker에서 처리한다.
+소켓 접근에 user ID 가 필요하기 때문에 기존에 쿠키로 처리하던 것을 indexedDB로 처리하도록 수정해야한다.
+
+
+게임관련 내용 ------
+AI대국에서 흑 백 순서는 매 판 교차한다.
+
+돌 착수 함수 True
+턴 개념 false
+승 패 개념 True
+
+redis 관련 내용-=--------------
+https://luran.me/381
+https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kwoncharlie&logNo=220396733746
+https://urame.tistory.com/entry/python%EC%9C%BC%EB%A1%9C-redis-%EA%B0%92-%EB%B2%94%EC%9C%84-%EC%A1%B0%ED%9A%8C-zrange
+https://luran.me/381
+https://blog.naver.com/PostView.naver?blogId=kbh3983&logNo=222436008591&parentCategoryNo=&categoryNo=&viewDate=&isShowPopularPosts=false&from=postView
+https://www.oss.kr/storage/app/public/festival/track2/2-1.pdf
+
+redis.zadd('Key', {'Value1': 1, 'Value2': 2})
+flushall
+
+In [292]: import redis
+In [293]: r = redis.Redis()
+
+In [294]: r.zadd('channel', 'a', 0, 'b', 5, 'c', 8, 'd', 20)
+Out[294]: 4
+
+In [295]: r.zrange('channel', 0, -1, withscores=True)
+Out[295]: [(b'a', 0.0), (b'b', 5.0), (b'c', 8.0), (b'd', 20.0)]
+
+
+MAP을 순회하면서 조건에 해당하는지 확인하고
+점수를 반환하면 될듯
+끝나면 정상동작 확인

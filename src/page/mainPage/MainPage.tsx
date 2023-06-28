@@ -9,7 +9,7 @@ import GameList, { GameTopLayout } from 'components/GameList';
 import Chatting from 'components/Chatting';
 import { HTTP_ADDRESS } from 'util/const';
 import { getCookie, setCookie, JsonHttpReponse } from 'util/util';
-import type { UserInfo as User } from 'type/userType';
+import type { UserInfo as User } from 'util/type/userType';
 import './mainPage.css';
 import { login } from 'store/slices/userSlice';
 import { connect } from 'store/slices/wsSlice';
@@ -17,12 +17,10 @@ import { WS_ADDRESS } from 'util/const';
 const HomeComponent = () => {
   const [pk, setPk] = useState<string>('');
   const userInfos: User = useAppSelector((state) => state.user);
-  console.log(userInfos, 'userInfos입니다');
+  // console.log(userInfos, 'userInfos입니다');
   // const { nickname, win, defeat, userId } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
-  const roomName = 'test1';
   useEffect(() => {
-    console.log('동작');
     if (getCookie('USERID') === undefined) {
       JsonHttpReponse('https://geolocation-db.com/json/', {
         method: 'GET',
@@ -37,9 +35,10 @@ const HomeComponent = () => {
     } else {
       const userID = getCookie('USERID');
       JsonHttpReponse(`${HTTP_ADDRESS}storage/user/${userID}`).then((data) => {
-        console.log(data);
+        // console.log(data);
         dispatch(login({ ...data, userId: userID }));
-        dispatch(connect({ url: `${WS_ADDRESS}chat/${roomName}/${userID}`, type: 'chat' }));
+        // dispatch(connect({ url: `${WS_ADDRESS}chat/${roomName}/${userID}`, type: 'chat' }));
+        // 여기서 postMessage로 userID전송
       });
     }
   }, [pk]);

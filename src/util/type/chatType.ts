@@ -1,4 +1,4 @@
-import type { UserInfo } from 'type/userType';
+import type { UserInfo } from 'util/type/userType';
 export interface Chatting {
   user?: UserInfo;
   sandTime?: Date;

@@ -7,10 +7,9 @@ import GameComponent from 'components/Game';
 import Chatting from 'components/Chatting';
 import { RoomInfo } from 'components/RoomInfo';
 
-const GamePageComponent = () => {
+const GamePageComponent = (mode: { mode?: boolean }) => {
   const params = useParams();
-  console.log(params);
-  return (
+  return params.id ? (
     <Box
       component="main"
       sx={{
@@ -23,21 +22,24 @@ const GamePageComponent = () => {
         boxSizing: 'border-box',
       }}
     >
-      <div>
-        <Grid container spacing={2}>
+      <div style={{ height: '100%' }}>
+        <Grid container spacing={2} style={{ height: '100%' }}>
           <Grid item xs>
             <RoomInfo id={params.id} />
           </Grid>
           <Grid item xs>
-            <GameComponent id={params.id} /*onClick={}*/ />
+            <GameComponent id={params.id} mode={mode.mode} />
           </Grid>
-          <Grid item xs>
-            <Chatting />
-            {/* roomName={`game${params.id}`} */}
-          </Grid>
+          {!mode.mode && (
+            <Grid item xs>
+              <Chatting />
+            </Grid>
+          )}
         </Grid>
       </div>
     </Box>
+  ) : (
+    <div>잘못된 요청 403</div>
   );
 };
 export default GamePageComponent;

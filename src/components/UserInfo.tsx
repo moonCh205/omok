@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {} from '../store/slices/userSlice';
-import type { UserInfoProps } from 'type/userType';
+import type { UserInfoProps } from 'util/type/userType';
 import { HTTP_ADDRESS } from 'util/const';
 import { getCookie, setCookie, JsonHttpReponse } from 'util/util';
 import { useAppDispatch, useAppSelector } from '../store/config';
@@ -17,7 +17,6 @@ const time = () => {
 };
 
 export default function BasicCard(props: UserInfoProps) {
-  console.log(props);
   // const { win, defeat, name, introduction, classCode, black } = props;
   const { win, defeat, nickname, black, index } = props;
   const introduction = '핫둘핫둘',
@@ -35,7 +34,7 @@ export default function BasicCard(props: UserInfoProps) {
         JsonHttpReponse(`${HTTP_ADDRESS}storage/user/${getCookie('USERID')}?key=nickname&value=${newNickname}`, {
           method: 'PUT',
         }).then((data) => {
-          console.log(data);
+          // console.log(data);
         });
         dispatch(updateName(newNickname));
         dispatch(rename(true));

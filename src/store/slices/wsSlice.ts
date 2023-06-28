@@ -16,7 +16,6 @@ export const socketSlice = createSlice({
     connect: (state, action: PayloadAction<PayloadData>) => {
       const type = action.payload.type;
       state[type].ws.url = action.payload.url;
-      console.log(state[type]);
       state[type].ws.connect();
     },
   },

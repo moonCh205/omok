@@ -14,6 +14,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomeComponent />} />
             <Route path="/game/:id" element={<GamePageComponent />} />
+            <Route path="/ai_game/:id" element={<GamePageComponent mode={true} />} />
           </Routes>
         </div>
       </ThemeProvider>

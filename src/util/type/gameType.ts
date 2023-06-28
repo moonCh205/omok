@@ -1,3 +1,4 @@
+import type { SCORE_RULE } from 'util/const/gameConst';
 interface XyUndifind {
   x?: number;
   y?: number;
@@ -18,6 +19,7 @@ export interface info extends Xy {
 export interface GameWS extends Game {
   data?: info | null;
   ws?: WebSocket | null;
+  myColor?: boolean;
 }
 export interface KeyString {
   [key: string]: any;
@@ -31,6 +33,17 @@ export type StoneCount = {
   secondEmptyCount: number;
   isWhite: boolean;
 } & KeyString;
+export interface Minimax {
+  mini: number;
+  max: number;
+}
+export interface MinimizeABParam {
+  map: number[][];
+  prohibit: ProhibitInfo;
+  y: Minimax;
+  x: Minimax;
+  player: boolean;
+}
 export interface GameState extends KeyString {
   turn: number;
   time: number;
@@ -39,6 +52,19 @@ export interface GameState extends KeyString {
   black: StoneInfo;
   response: { win: number };
   prohibit: ProhibitInfo;
+  y: Minimax;
+  x: Minimax;
+}
+export interface GameStateUn extends KeyString {
+  turn: number;
+  time?: number;
+  map: number[][];
+  white: StoneInfo;
+  black: StoneInfo;
+  response?: { win: number };
+  prohibit: ProhibitInfo;
+  y: Minimax;
+  x: Minimax;
 }
 export interface Coordinate extends Xy {
   overflow: boolean;
@@ -51,4 +77,15 @@ export interface Room {
   room_index: number;
   count: number;
   start: boolean;
+}
+export type AI = 'BLACK' | 'WHITE';
+export type ALPHA_BETA = {
+  a: number;
+  b: number;
+};
+export interface NextTurnAction {
+  player: boolean;
+  difficulty: number;
+  ai: AI;
+  myColor: boolean;
 }

@@ -1,6 +1,6 @@
 import { MAP_SIZE } from 'util/const';
 import { customLog } from 'util/util';
-import type { UserInfo } from '../../type/userType';
+import type { UserInfo } from '../../util/type/userType';
 export const userUtil = {
   initState: function (): UserInfo {
     return {
