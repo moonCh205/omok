@@ -8,21 +8,65 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import type { Room } from 'util/type/gameType';
-
+import { HTTP_ADDRESS } from 'util/const';
+import { getCookie, JsonHttpReponse } from 'util/util';
+interface RoomInfo {
+  count: number;
+  index: number;
+  room_name: string;
+  start: boolean;
+}
 export default function BasicTable() {
+  const [gameList, setGameList] = React.useState<RoomInfo[]>([]);
+  const [polling, setPolling] = React.useState<number>(0);
+  React.useEffect(() => {
+    JsonHttpReponse(`${HTTP_ADDRESS}storage/room/0`, {
+      method: 'GET',
+    }).then((response) => {
+      console.log(response);
+      if (response.state === 200) {
+        setGameList(response.data);
+      } else {
+        console.log('방 조회 실패,,,');
+      }
+    });
+  }, [polling]);
+  setTimeout(() => {
+    setPolling(polling + 1);
+  }, 10000);
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
         <TableHead>
           <TableRow>
-            <TableCell>Dessert (100g serving)</TableCell>
-            <TableCell align="right">Calories</TableCell>
-            <TableCell align="right">Fat&nbsp;(g)</TableCell>
-            <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-            <TableCell align="right">Protein&nbsp;(g)</TableCell>
+            <TableCell align="left">방 번호</TableCell>
+            <TableCell align="left">방 제목</TableCell>
+            <TableCell align="left">인원</TableCell>
+            <TableCell align="left">상태</TableCell>
+            {/* <TableCell align="right">Protein&nbsp;(g)</TableCell> */}
           </TableRow>
         </TableHead>
-        <TableBody>{/* rows.map((row) => (  )) */}</TableBody>
+        <TableBody>
+          {gameList.length === 0 ? (
+            <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+              <TableCell component="th" scope="row">
+                방이 없습니다.
+              </TableCell>
+            </TableRow>
+          ) : (
+            gameList.map((row) => (
+              <TableRow key={row.index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell component="th" scope="row" align="left">
+                  {row.index}
+                </TableCell>
+                <TableCell align="left">{row.room_name}</TableCell>
+                <TableCell align="left">{row.count}</TableCell>
+                <TableCell align="left">{row.start ? '진행중' : '대기중'}</TableCell>
+                {/* <TableCell align="right">{row.protein}</TableCell> */}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
       </Table>
     </TableContainer>
   );
@@ -83,7 +127,8 @@ const BootstrapInput = styled(InputBase)(({ theme }) => ({
 
 export const GameTopLayout = () => {
   const [open, setOpen] = React.useState(false);
-  const [gameMode, setGameMode] = React.useState<Boolean>(false);
+  const [gameMode, setGameMode] = React.useState<Boolean>(true);
+  const [roomName, setRoomName] = React.useState<string>('');
   const [difficulty, setDifficulty] = React.useState<number>(0);
   const navigate = useNavigate();
   const handleClickOpen = () => {
@@ -96,9 +141,18 @@ export const GameTopLayout = () => {
   const handleCreateRoom = () => {
     setOpen(false);
     if (gameMode) {
-      const onClickEvent = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
-        // navigate(`/game/${}`);
-      };
+      // const onClickEvent = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
+      // navigate(`/game/${}`);
+      JsonHttpReponse(`${HTTP_ADDRESS}storage/room/1?room_name=${roomName}`, {
+        method: 'POST',
+      }).then((data) => {
+        if (data.state === '200') {
+          navigate(`/game/${data.room_index}`);
+        } else {
+          console.log('방 생성 실패,,,');
+        }
+      });
+      // };
     } else {
       navigate(`/ai_game/${difficulty}`);
     }
@@ -124,19 +178,6 @@ export const GameTopLayout = () => {
               <FormLabel id="demo-row-radio-buttons-group-label">모드</FormLabel>
               <RadioGroup row aria-labelledby="demo-row-radio-buttons-group-label">
                 <FormControlLabel
-                  value="alone"
-                  control={
-                    <Radio
-                      name="mode"
-                      checked={gameMode == false}
-                      onChange={() => {
-                        setGameMode(false);
-                      }}
-                    />
-                  }
-                  label="AI 대국"
-                />
-                <FormControlLabel
                   value="together"
                   control={
                     <Radio
@@ -148,6 +189,19 @@ export const GameTopLayout = () => {
                     />
                   }
                   label="1대1 대국"
+                />
+                <FormControlLabel
+                  value="alone"
+                  control={
+                    <Radio
+                      name="mode"
+                      checked={gameMode == false}
+                      onChange={() => {
+                        setGameMode(false);
+                      }}
+                    />
+                  }
+                  label="AI 대국"
                 />
               </RadioGroup>
             </FormControl>
@@ -162,6 +216,9 @@ export const GameTopLayout = () => {
                   type="email"
                   fullWidth
                   variant="standard"
+                  onChange={(event) => {
+                    setRoomName(event.target.value);
+                  }}
                 />
               </>
             )}

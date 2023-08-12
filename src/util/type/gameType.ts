@@ -89,3 +89,13 @@ export interface NextTurnAction {
   ai: AI;
   myColor: boolean;
 }
+export interface SearchProperty {
+  empty: boolean;
+  otherStone: boolean;
+  count: number;
+}
+export interface SearchStone {
+  first: SearchProperty;
+  second: SearchProperty;
+  count: number;
+}

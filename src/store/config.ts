@@ -4,12 +4,14 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { gameSlice } from './slices/omokSlice';
 import { userSlice } from './slices/userSlice';
 import { socketSlice } from './slices/wsSlice';
+import { roomSlice } from './slices/gameRoomSlice';
 // const logger = createLogger();
 
 const rootReducer = combineReducers({
   game: gameSlice.reducer,
   user: userSlice.reducer,
   ws: socketSlice.reducer,
+  room: roomSlice.reducer,
 });
 
 const initialState = {};

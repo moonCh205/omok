@@ -1,7 +1,16 @@
 import { MAP_SIZE } from 'util/const';
 import { customLog } from 'util/util';
-import type { StoneInfo, GameState, Coordinate, AI, ProhibitInfo, StoneCount, Minimax } from 'util/type/gameType';
-import { MAX_SCORE } from 'util/const/gameConst';
+import type {
+  StoneInfo,
+  GameState,
+  Coordinate,
+  AI,
+  ProhibitInfo,
+  StoneCount,
+  Minimax,
+  SearchStone,
+} from 'util/type/gameType';
+import { ATTACK_WEIGHTED, DEFENSE_WEIGHTED, SCORE_RULE, PASSCODE } from 'util/const/gameConst';
 export const gameUtil = {
   inintState: function (): GameState {
     return {
@@ -181,9 +190,7 @@ export const gameUtil = {
             if (this.overflowCheck(executed)) {
               if (map[executed.y][executed.x] === 1) {
                 nowInfo[emptyType]++;
-                console.log(
-                  `${y},${x} 값이 빈 값이고 ${executed.y},${executed.x} 값에 흑돌이 있습니다. ${emptyType} 값이 증가합니다.`
-                );
+                // console.log( `${y},${x} 값이 빈 값이고 ${executed.y},${executed.x} 값에 흑돌이 있습니다. ${emptyType} 값이 증가합니다.` );
                 this.temp2(executed, { visited, state, q, map, type, direction, nowInfo });
               }
             }
@@ -357,31 +364,6 @@ export const gameUtil = {
     return prohibit;
   },
 };
-/** AI : 1 , user : 2
- * 돌이 배치 된 상태;
- * 일단 흑돌 백돌 상태를 확인해야한다
- * 그리고 AI가 흑돌인 경우라고 가정 할 경우
- * 흑이 곧은 사 이다. 999
- * 흑이 삼이다. 888
- * 흑이 사이다. 99
- * 흑이 연결된 돌이 3개가 있다 (한 쪽 막힌 상태). 10
- * 연결된 돌이 2개가 있다. 9
- * 연결된 돌이 2개가 있다 (한 쪽 막힌 상태). 2
- * 돌이 한개 있다. 2
- *
- * 백이 곧은 사 이다. 900
- * 백이 삼이다 800
- * 백이 사이다 88
- * 백이 연결된 돌이 3개가 있다 (한 쪽 막힌 상태). 6
- * 연결된 돌이 2개가 있다. 8
- * 연결된 돌이 2개가 있다 (한 쪽 막힌 상태). 1
- * 돌이 한개 있다. 1
- * 0 2 0 2 0 =>
- * 1 2 2 2 0 => 1 2 2 2 1  :  ??
- * 0 2 2 2 0 => 1 2 2 2 0  :  ??
- * 1 2 2 2 2 => 1 2 2 2 1  :  ??
- *
- **/
 type key = 'first' | 'second';
 type searchKey = 'firstEmpty' | 'secondEmpty' | 'firstOtherStone' | 'secondOtherStone';
 export const aiGameUtil = {
@@ -426,14 +408,141 @@ export const aiGameUtil = {
 
     return response;
   },
+  returnScore(search: SearchStone, searchType: boolean, nowPlayer: number) {
+    //searchType ? 공격점수 : 방어점수
+    /**
+     * if문을 다시 해야함
+     * 맵에 있는 모든 돌의 XY좌표를 확인하기 때문에
+     * 방어점수는 해당 자리에 돌을 착수하여 방어 했을 떄 어떤 상황인가를 기준으로 점수를 줘야함
+     * !search.first.otherStone && !search.second.otherStone 조건이 TRUE가 나올 수 없음
+     *
+     * 공격점수는 해당 자리에 돌을 착수하여 공격 했을 때 어떤 상황인가를 기준으로 판단해야함
+     *
+     * 방어하지 않는 경우는 지금 또는 다음 내 차례에서 내 승리로 끝나는 경우로 아래와 같다.
+     *    XY 좌표에 돌을 둠으로
+     *      오목을 먼저 만들 수 있는 경우
+     *      열린 사를 상대보다 먼저 만드는 경우
+     *
+     * 방어 해야하는 경우는
+     *    상대가 삼을 만든 경우
+     *    상대가 사또는 열린 사인 경우
+     *
+     *
+     * */
+    let response = { score: 0 };
+    if (searchType) {
+      // 공격점수
+      if (!search.first.otherStone && !search.second.otherStone) {
+        switch (search.count) {
+          case 5:
+            response.score = ATTACK_WEIGHTED.WIN;
+            break;
+          case 4:
+            response.score = ATTACK_WEIGHTED.OPNE_4;
+            break;
+          case 3:
+            response.score = ATTACK_WEIGHTED.OPNE_3;
+            break;
+          case 2:
+            response.score = ATTACK_WEIGHTED.OPNE_2;
+            break;
+          case 1:
+            response.score = ATTACK_WEIGHTED.OPNE_1;
+            break;
+        }
+      } else if (
+        (search.first.otherStone && search.second.count === 0) ||
+        (search.second.otherStone && search.first.count === 0) ||
+        (search.first.otherStone && !search.second.otherStone) ||
+        (!search.first.otherStone && search.second.otherStone)
+      ) {
+        switch (search.count) {
+          case 5:
+            response.score = ATTACK_WEIGHTED.WIN;
+            break;
+          case 4:
+            response.score = ATTACK_WEIGHTED.CLOSE_4;
+            break;
+          case 3:
+            response.score = ATTACK_WEIGHTED.CLOSE_3;
+            break;
+          case 2:
+            response.score = ATTACK_WEIGHTED.CLOSE_2;
+            break;
+          case 1:
+            response.score = ATTACK_WEIGHTED.CLOSE_1;
+            break;
+        }
+      }
+    } else {
+      //방어점수
+      if (
+        search.count >= 4 &&
+        ((!search.first.otherStone && !search.second.otherStone) ||
+          (search.first.otherStone && search.second.count === 0) ||
+          (search.second.otherStone && search.first.count === 0) ||
+          (search.first.otherStone && search.second.otherStone) ||
+          (search.first.count >= 1 &&
+            search.second.count >= 1 &&
+            ((!search.first.otherStone && !search.second.otherStone) ||
+              (search.first.otherStone && search.second.otherStone) ||
+              (!search.first.otherStone && search.second.otherStone) ||
+              (search.first.otherStone && !search.second.otherStone))))
+      ) {
+        response.score = DEFENSE_WEIGHTED.WIN;
+      } else if (
+        (search.first.otherStone && search.second.count === 0) ||
+        (search.second.otherStone && search.first.count === 0) ||
+        (search.first.otherStone && !search.second.otherStone) ||
+        (!search.first.otherStone && search.second.otherStone) ||
+        (search.first.otherStone && search.second.otherStone)
+      ) {
+        switch (search.count) {
+          case 5:
+            response.score = DEFENSE_WEIGHTED.WIN;
+            break;
+          case 4:
+            response.score = DEFENSE_WEIGHTED.CLOSE_4;
+            break;
+          case 3:
+            response.score = DEFENSE_WEIGHTED.CLOSE_3;
+            break;
+          case 2:
+            response.score = DEFENSE_WEIGHTED.CLOSE_2;
+            break;
+          case 1:
+            response.score = DEFENSE_WEIGHTED.CLOSE_1;
+            break;
+        }
+      } else if (!search.first.otherStone && !search.second.otherStone) {
+        switch (search.count) {
+          case 5:
+            response.score = DEFENSE_WEIGHTED.WIN;
+            break;
+          case 4:
+            response.score = DEFENSE_WEIGHTED.OPNE_4;
+            break;
+          case 3:
+            response.score = DEFENSE_WEIGHTED.OPNE_3;
+            break;
+          case 2:
+            response.score = DEFENSE_WEIGHTED.OPNE_2;
+            break;
+          case 1:
+            response.score = DEFENSE_WEIGHTED.OPNE_1;
+            break;
+        }
+      }
+    }
+    return response;
+  },
   defenseScore(map: number[][], y: number, x: number, nowPlayer: number, searchType: number) {
     // XY 좌표 주변에 다른돌이 연속으로 오는가
-    // const myStone = ai === 'BLACK' ? 1 : 2;
     const myStone = nowPlayer;
     const otherStone = myStone === 2 ? 1 : 2;
     const q = [[y, x]];
     const visited: StoneInfo = {};
-    const search = {
+    const search: SearchStone = {
       first: {
         empty: false,
         otherStone: false,
@@ -474,58 +583,24 @@ export const aiGameUtil = {
         }
       });
     }
-    let score = 0;
-    if (search.count >= 4) {
-      if (
-        (!search.first.otherStone && !search.second.otherStone) ||
-        (search.first.otherStone && search.second.count === 0) ||
-        (search.second.otherStone && search.first.count === 0)
-      ) {
-        score = 8888;
-      }
-    } else if (!search.first.otherStone && !search.second.otherStone) {
-      switch (search.count) {
-        case 3:
-          score = 777;
-          break;
-        case 2:
-          score = 4;
-          break;
-        case 1:
-          score = 2;
-          break;
-      }
-    } else if (
-      (search.first.otherStone && search.second.count === 0) ||
-      (search.second.otherStone && search.first.count === 0) ||
-      (search.first.otherStone && !search.second.otherStone) ||
-      (!search.first.otherStone && search.second.otherStone)
-    ) {
-      switch (search.count) {
-        case 3:
-          score = 5;
-          break;
-        case 2:
-          score = 3;
-          break;
-        case 1:
-          score = 1;
-          break;
-      }
+    if (search.count !== 0 && (search.first.otherStone || search.second.otherStone)) {
+      if (search.first.otherStone) search.second.otherStone = true;
+      else search.first.otherStone = true;
+    } else if (search.count !== 0 && !search.first.otherStone && !search.second.otherStone) {
+      search.first.otherStone = true;
     }
+    let score = this.returnScore(search, false, nowPlayer);
+
     return score;
   },
 
   attackScore(map: number[][], y: number, x: number, nowPlayer: number, searchType: number) {
     // XY주변에 내 돌이 연속으로 있는가
-    // const myStone = ai === 'BLACK' ? 1 : 2;
-    // const myStone = nowPlayer ? 2 : 1;
-    // const otherStone = myStone === 2 ? 1 : 2;
     const myStone = nowPlayer;
     const otherStone = myStone === 2 ? 1 : 2;
     const q = [[y, x]];
     const visited: StoneInfo = {};
-    const search = {
+    const search: SearchStone & { wall: boolean } = {
       first: {
         empty: false,
         otherStone: false,
@@ -537,6 +612,7 @@ export const aiGameUtil = {
         count: 0,
       },
       count: 1,
+      wall: false,
     };
     while (q.length !== 0) {
       let [y, x]: number[] = q.shift() as Array<number>;
@@ -576,85 +652,145 @@ export const aiGameUtil = {
             }
           } else {
             stop = true;
+            search.wall = true;
           }
         }
       });
     }
-    let score = 0;
+    if (search.first.otherStone && search.second.otherStone) return { score: 0 };
+    if (search.wall && search.count < 5 && (search.first.otherStone || search.second.otherStone)) return { score: 0 };
+    let score = this.returnScore(search, true, nowPlayer);
 
-    if (!search.first.otherStone && !search.second.otherStone) {
-      switch (search.count) {
-        case 5:
-        case 4:
-          score = 9999;
-          break;
-        case 3:
-          score = 999;
-          break;
-        case 2:
-          score = 5;
-          break;
-        case 1:
-          score = 2;
-          break;
-      }
-    } else if (
-      (search.first.otherStone && search.second.count === 0) ||
-      (search.second.otherStone && search.first.count === 0) ||
-      (search.first.otherStone && !search.second.otherStone) ||
-      (!search.first.otherStone && search.second.otherStone)
-    ) {
-      switch (search.count) {
-        case 5:
-          score = 9999;
-          break;
-        case 4:
-          score = 888;
-          break;
-        case 3:
-          score = 6;
-          break;
-        case 2:
-          score = 4;
-          break;
-        case 1:
-          score = 1;
-          break;
-      }
-    }
     return score;
   },
-  evaluate(map: number[][], y: number, x: number, nowPlayer: boolean, ai: AI) {
+  evaluate(map: number[][], ai: AI, nowPlayer: boolean, yPostion: number, xPostion: number) {
+    //액션 함수의 결과를 판단.
     const myAI = ai === 'BLACK' ? 1 : 2;
+
     let userScore = 0;
     let aiScore = 0;
-
+    let count = 0;
+    const temp1: { white: DEFENSE_WEIGHTED[]; black: DEFENSE_WEIGHTED[] } = {
+      white: [],
+      black: [],
+    };
+    const temp2: { white: ATTACK_WEIGHTED[]; black: ATTACK_WEIGHTED[] } = {
+      white: [],
+      black: [],
+    };
+    const temp3: { attack: ATTACK_WEIGHTED[]; defense: DEFENSE_WEIGHTED[]; attackScore: number; defenseScore: number } =
+      {
+        attack: [],
+        defense: [],
+        attackScore: 0,
+        defenseScore: 0,
+      };
     for (let y = 0; y < MAP_SIZE; y++) {
       for (let x = 0; x < MAP_SIZE; x++) {
         if (map[y][x] !== 0) {
+          count++;
           const loop = [1, 2, 3, 4];
           let attackScore = 0;
           let defenseScore = 0;
           loop.forEach((e) => {
-            attackScore += this.attackScore(map, y, x, map[y][x], e);
-            defenseScore += this.defenseScore(map, y, x, map[y][x], e);
+            const responseDefense = this.defenseScore(map, y, x, map[y][x], e);
+            const responseAttack = this.attackScore(map, y, x, map[y][x], e);
+            let att: 'black' | 'white' = 'white';
+            if (map[y][x] === 1) {
+              att = 'black';
+            }
+            if (yPostion === y && xPostion === x) {
+              // 해당 수가 공격수 인지 방어 수 인지 판단 해야함
+              temp3.attack.push(responseAttack.score);
+              temp3.defense.push(responseDefense.score);
+              temp3.attackScore += responseAttack.score;
+              temp3.defenseScore += responseDefense.score;
+            }
+
+            if (responseDefense.score >= DEFENSE_WEIGHTED.CLOSE_3) {
+              temp1[att].push(responseDefense.score);
+            }
+            if (responseAttack.score >= ATTACK_WEIGHTED.OPNE_3) {
+              temp2[att].push(responseAttack.score);
+            }
+
+            defenseScore += responseDefense.score;
+            attackScore += responseAttack.score;
           });
+          attackScore = attackScore / loop.length;
+          defenseScore = defenseScore / loop.length;
+          const addValue = (attackScore + defenseScore) / 2;
           if (myAI === map[y][x]) {
-            if (attackScore > defenseScore) {
-              aiScore += attackScore;
-            } else {
-              aiScore += defenseScore;
-            }
+            aiScore += addValue;
           } else {
-            if (attackScore > defenseScore) {
-              userScore += attackScore;
-            } else {
-              userScore += defenseScore;
-            }
+            userScore += addValue;
           }
         }
       }
     }
+    const n: 'white' | 'black' = nowPlayer ? 'white' : 'black';
+    const m: 'white' | 'black' = !nowPlayer ? 'white' : 'black';
+    const k = n === 'black' ? 1 : 2;
+
+    if (temp3.attackScore > temp3.defenseScore) {
+      // 공격수
+      if (temp2[m].indexOf(ATTACK_WEIGHTED.CLOSE_4) !== -1 || temp2[m].indexOf(ATTACK_WEIGHTED.OPNE_4) !== -1) {
+        if (temp2[n].indexOf(ATTACK_WEIGHTED.WIN) === -1) {
+          return PASSCODE;
+        }
+      } else if (temp2[m].indexOf(ATTACK_WEIGHTED.OPNE_3) !== -1) {
+        if (temp2[n].indexOf(ATTACK_WEIGHTED.WIN) > -1) {
+        } else if (temp2[n].indexOf(ATTACK_WEIGHTED.CLOSE_4) > -1) {
+        } else if (temp2[n].indexOf(ATTACK_WEIGHTED.OPNE_4) > -1) {
+        } else {
+          return PASSCODE;
+        }
+      }
+    } else {
+      // 방어수
+    }
+    let t = Math.floor(count / 2);
+    if (count % 2 === 0) {
+      aiScore = aiScore / t;
+      userScore = userScore / t;
+    } else {
+      if (ai === 'BLACK') {
+        aiScore = aiScore / (t + 1);
+        userScore = userScore / t;
+      } else {
+        aiScore = aiScore / t;
+        userScore = userScore / (t + 1);
+      }
+    }
+
+    /**
+     * 원인
+     * 가치판단을 할 때 내가 상대보다 빠르게 5를 만들 수 있는지 판단을 못함
+     * 방어의 가치를 공격의 가치 보다 높게 측정할 경우 이기는 판도 지는 선택을 함
+     * 해결책은
+     * 가치 판단을 하기 전에
+     * 상대의 3과 4
+     * 내 3과 4 를 확인 한 후
+     * 지금 상태가 상대보다 5를 빠르게 만드는 상태인지 확인 후 점수 측정해야함
+     * 빠르다면 그대로 진행
+     * 느리다면 공격의 가치를 0으로 변경
+     *
+     * 지금 상태가
+     * 방어를 한 상태
+     *
+     * 지금상태가 공격을 한 상태
+     *
+     * 위 두 상태가 상황에 따라 높은 가치로 결정 될 수 있도록 해야함
+     *
+     * 지금 상태가 방어 한 상태
+     * 방어한 수는 3, (4, 5)
+     * 3인 경우 내 돌 상태에 3이나 4가 없는 상태라면 방어
+     * (4, 5)인 경우
+     * 내 돌 상태에 4 가 없는 경우 방어
+     *
+     * 위 상태에 해당하지 않는다면 공격 (공격 가치가 더 높기 때문에 따로 수정할 부분은 없을 것이다.)
+     */
+
     return aiScore - userScore;
   },
 };

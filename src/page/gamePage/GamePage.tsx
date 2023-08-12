@@ -9,6 +9,7 @@ import { RoomInfo } from 'components/RoomInfo';
 
 const GamePageComponent = (mode: { mode?: boolean }) => {
   const params = useParams();
+  const turn = Math.floor(Math.random() * 10) % 2 === 0 ? false : true; // 0 이면 흑돌 1이면 백돌
   return params.id ? (
     <Box
       component="main"
@@ -24,11 +25,11 @@ const GamePageComponent = (mode: { mode?: boolean }) => {
     >
       <div style={{ height: '100%' }}>
         <Grid container spacing={2} style={{ height: '100%' }}>
-          <Grid item xs>
-            <RoomInfo id={params.id} />
+          <Grid item xs={mode.mode ? 2 : 'auto'}>
+            <RoomInfo id={params.id} mode={mode.mode} turn={turn} />
           </Grid>
-          <Grid item xs>
-            <GameComponent id={params.id} mode={mode.mode} />
+          <Grid item xs={mode.mode ? 10 : 'auto'}>
+            <GameComponent id={params.id} mode={mode.mode} turn={turn} />
           </Grid>
           {!mode.mode && (
             <Grid item xs>

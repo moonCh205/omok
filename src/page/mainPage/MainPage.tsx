@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useAppDispatch, useAppSelector } from 'store/config';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-import UserInfo from 'components/UserInfo';
+import { UserCard } from 'components/UserInfo';
 import ActiveNow from 'components/ActiveNow';
 import GameList, { GameTopLayout } from 'components/GameList';
 import Chatting from 'components/Chatting';
@@ -58,7 +58,7 @@ const HomeComponent = () => {
       <div>
         <Grid container spacing={3}>
           <Grid item xs>
-            <UserInfo {...userInfos} />
+            <UserCard {...userInfos} btn={true} />
             <div className="interval"></div>
             {/* <ActiveNow /> */}
           </Grid>
