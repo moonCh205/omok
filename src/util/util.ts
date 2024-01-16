@@ -6,6 +6,32 @@ export const customLog = {
     }
   },
 };
+import { HTTP_ADDRESS } from 'util/const';
+import { IdxedDbManager } from 'util/indexedDB/indexedDB';
+export namespace UtilUser {
+  export async function login() {
+    // const request = { data: {} };
+    const userID = getCookie('USERID');
+    const request = await JsonHttpReponse(`${HTTP_ADDRESS}storage/user/${userID}`).then((data) => {
+      return { ...data, userId: userID };
+    });
+    return request;
+  }
+  export async function join() {
+    return await JsonHttpReponse('https://geolocation-db.com/json/', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    }).then((data) => {
+      const baseStr = data['IPv4'] + new Date().getTime();
+      const hash = btoa(baseStr);
+      setCookie('USERID', hash);
+      const dbName = 'Concave';
+      const tableName = 'user';
+      const indexedDb = new IdxedDbManager(dbName).createTable(tableName, [{ id: '1', userId: hash }]);
+      return hash;
+    });
+  }
+}
 
 export async function JsonHttpReponse(
   url: string,

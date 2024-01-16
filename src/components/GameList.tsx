@@ -31,9 +31,9 @@ export default function BasicTable() {
       }
     });
   }, [polling]);
-  setTimeout(() => {
-    setPolling(polling + 1);
-  }, 10000);
+  // setTimeout(() => {
+  //   setPolling(polling + 1);
+  // }, 10000);
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }} aria-label="simple table">

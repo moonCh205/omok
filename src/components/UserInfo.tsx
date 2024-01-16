@@ -42,7 +42,7 @@ export function UserCard(props: UserInfoProps & { btn?: boolean }) {
 
   return (
     <ThemeProvider theme={nowTheme}>
-      <Card sx={{ width: '100%', maxWidth: 275, bgcolor: 'background.default' }}>
+      <Card sx={{ width: '100%', maxWidth: 275, bgcolor: 'background.default', margin: '0 auto' }}>
         <CardContent>
           <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
             {/* 오목 초보 */}

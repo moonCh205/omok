@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "target": "es6", //어떤버전의 js로 컴파일할지 정의
-    "lib": [ //어떤 환경에서 사용하는지 정의(api자동완성 제공해줌)
+    "lib": [
+      //어떤 환경에서 사용하는지 정의(api자동완성 제공해줌)
       "dom", //브라우저
       "dom.iterable",
       "esnext"
@@ -21,10 +22,9 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": [ //컴파일할 폴더 입력. src의 모든파일 확인함
+  "include": [
+    //컴파일할 폴더 입력. src의 모든파일 확인함
     "src"
   ],
-  "exclude": [
-    "node_modules"   
-  ],
+  "exclude": ["node_modules"]
 }

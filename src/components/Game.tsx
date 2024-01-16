@@ -2,7 +2,6 @@
 import React, { useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/config';
 import { putStone, nextTurn, putStoneAI, setAi } from '../store/slices/omokSlice';
-import { login } from 'store/slices/userSlice';
 import {
   updateBlack,
   updateWhite,
@@ -12,7 +11,7 @@ import {
   resetBlack,
   resetWhite,
 } from '../store/slices/gameRoomSlice';
-import { getCookie, setCookie, JsonHttpReponse } from 'util/util';
+import { getCookie, setCookie, JsonHttpReponse, UtilUser } from 'util/util';
 import type { AI, GameWS, info, NextTurnAction } from '../util/type/gameType';
 import { WS_ADDRESS, MAP_SIZE } from 'util/const';
 import { miniMaxAB } from 'util/Ai/main';
@@ -220,15 +219,8 @@ const GameComponent = (props: { id: string; mode?: boolean; turn?: boolean }) =>
   const dispatch = useAppDispatch();
   useEffect(() => {
     if (getCookie('USERID') === undefined) {
-      JsonHttpReponse('https://geolocation-db.com/json/', {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      }).then((data) => {
-        const baseStr = data['IPv4'] + new Date().getTime();
-        const hash = btoa(baseStr);
-
-        setCookie('USERID', hash);
-        setPk(hash);
+      UtilUser.join().then((data) => {
+        setPk(data);
       });
     } else {
       const userID = getCookie('USERID');
